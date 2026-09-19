@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Advanced Loring Gas Control UI</title>
+</head>
+<body>
+
+<h1>Advanced Loring Gas Control UI</h1>
+
+<div id="buttons"></div>
+
+<div id="roasterOptions">
+  <label><input type="radio" name="roaster" value="S7" checked> S7</label>
+  <label><input type="radio" name="roaster" value="S15"> S15</label>
+  <label><input type="radio" name="roaster" value="S35"> S35</label>
+</div>
+
+<h1><button onclick="alert('feature planned for Q2 of 2092')">&#8594; Go to page 2 for odd number gas values</button></h1>
+
+<a href="/entry">Switch to an even more advanced UI</a>
+
+<script>
+function selectedRoaster() {
+  var radios = document.getElementsByName('roaster');
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) {
+      return radios[i].value;
+    }
+  }
+  return 'S7';
+}
+
+function sendGas(value) {
+  var payload = { value: value };
+  var roaster = selectedRoaster();
+  if (roaster === 'S15' || roaster === 'S35') {
+    payload.ip = '192.168.1.199';
+  }
+
+  fetch('http://127.0.0.1:8080/gas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(function (res) { return res.text(); })
+    .then(function (text) { console.log('gas=' + value + ' response: ' + text); })
+    .catch(function (err) { console.error('gas=' + value + ' failed: ' + err); });
+}
+
+var container = document.getElementById('buttons');
+for (var v = 20; v <= 100; v += 2) {
+  (function (value) {
+    var btn = document.createElement('button');
+    btn.textContent = value;
+    btn.onclick = function () { sendGas(value); };
+    container.appendChild(btn);
+  })(v);
+
+  if (v === 66) {
+    var funBtn = document.createElement('button');
+    funBtn.textContent = '⁶🤷‍♂️⁷';
+    funBtn.onclick = function () { alert('lol no'); };
+    container.appendChild(funBtn);
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Super Advanced Loring Gas Control UI</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: sans-serif;
+  }
+
+  h1 {
+    margin-bottom: 40px;
+  }
+
+  #box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 50px 70px;
+  }
+
+  #inputRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #gasValue {
+    font-size: 48px;
+    padding: 10px;
+    width: 220px;
+    text-align: center;
+  }
+
+  #unitLabel {
+    font-size: 40px;
+  }
+
+  #helperText {
+    font-size: 16px;
+    color: #666;
+    margin: 0 auto;
+    width: 220px;
+    text-align: center;
+  }
+
+  @keyframes flashGreen {
+    0% { border-color: #2ecc71; }
+    100% { border-color: #333; }
+  }
+
+  @keyframes flashRed {
+    0% { border-color: #e74c3c; }
+    100% { border-color: #333; }
+  }
+
+  #box.flash-green {
+    animation: flashGreen 0.6s ease-out;
+  }
+
+  #box.flash-red {
+    animation: flashRed 0.6s ease-out;
+  }
+
+  #roasterOptions {
+    margin-top: 40px;
+    font-size: 22px;
+    display: flex;
+    gap: 30px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Super Advanced Loring Gas Control UI</h1>
+
+<div id="box">
+  <div id="inputRow">
+    <input id="gasValue" type="number" placeholder="Enter gas" autofocus>
+    <span id="unitLabel">%</span>
+  </div>
+  <p id="helperText">Press enter key to set burner</p>
+</div>
+
+<div id="roasterOptions">
+  <label><input type="radio" name="roaster" value="S7" checked> S7</label>
+  <label><input type="radio" name="roaster" value="S15"> S15</label>
+  <label><input type="radio" name="roaster" value="S35"> S35</label>
+</div>
+
+<script>
+var input = document.getElementById('gasValue');
+var box = document.getElementById('box');
+
+function flashBox(success) {
+  box.classList.remove('flash-green', 'flash-red');
+  void box.offsetWidth;
+  box.classList.add(success ? 'flash-green' : 'flash-red');
+}
+
+box.addEventListener('animationend', function () {
+  box.classList.remove('flash-green', 'flash-red');
+});
+
+function selectedRoaster() {
+  var radios = document.getElementsByName('roaster');
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) {
+      return radios[i].value;
+    }
+  }
+  return 'S7';
+}
+
+function sendGas() {
+  var value = parseInt(input.value, 10);
+  if (isNaN(value)) {
+    return;
+  }
+  if (value < 20) {
+    value = 20;
+  } else if (value > 100) {
+    value = 100;
+  }
+
+  var payload = { value: value };
+  var roaster = selectedRoaster();
+  if (roaster === 'S15' || roaster === 'S35') {
+    payload.ip = '192.168.1.199';
+  }
+
+  fetch('/gas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(function (res) {
+      flashBox(res.status === 200);
+      return res.text();
+    })
+    .then(function (text) { console.log('gas=' + value + ' response: ' + text); })
+    .catch(function (err) {
+      flashBox(false);
+      console.error('gas=' + value + ' failed: ' + err);
+    });
+
+  input.placeholder = value;
+  input.value = '';
+}
+
+input.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') {
+    sendGas();
+  }
+});
+</script>
+
+</body>
+</html>
