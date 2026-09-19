@@ -1,10 +1,10 @@
 # loring-link
 
 A very small Go command-line utility and server example that sends a burner value to the Loring/Koyo PLC. The built files under the dist folder can be run as executables depending on which hardware you have:
-darwin-arm64 => macOS on Apple silicon
-darwin-amd64 => macOS on intel/AMD silicon
-linux-amd64 => Linux distribution on intel/AMD silicon
-windows-amd64 => Windows OS on intel/AMD silicon
+- darwin-arm64 => macOS on Apple silicon
+- darwin-amd64 => macOS on intel/AMD silicon
+- linux-amd64 => Linux distribution on intel/AMD silicon
+- windows-amd64 => Windows OS on intel/AMD silicon
 
 ## Prerequisites
 
