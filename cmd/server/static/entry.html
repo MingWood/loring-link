@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Super Advanced Loring Gas Control UI</title>
+<title>Extra Good Loring Control UI</title>
 <style>
   body {
     display: flex;
@@ -71,16 +71,35 @@
   }
 
   #roasterOptions {
-    margin-top: 40px;
+    margin-bottom: 40px;
     font-size: 22px;
     display: flex;
-    gap: 30px;
+    align-items: center;
+    gap: 20px;
+  }
+
+  #actionButtons {
+    margin-top: 40px;
+    display: flex;
+    gap: 20px;
+  }
+
+  #actionButtons button {
+    font-size: 22px;
+    padding: 10px 30px;
   }
 </style>
 </head>
 <body>
 
-<h1>Super Advanced Loring Gas Control UI</h1>
+<h1>Extra Good Loring Control UI</h1>
+
+<div id="roasterOptions">
+  <span>Select Loring:</span>
+  <label><input type="radio" name="roaster" value="S7" checked> S7</label>
+  <label><input type="radio" name="roaster" value="S15"> S15</label>
+  <label><input type="radio" name="roaster" value="S35"> S35</label>
+</div>
 
 <div id="box">
   <div id="inputRow">
@@ -90,10 +109,9 @@
   <p id="helperText">Press enter key to set burner</p>
 </div>
 
-<div id="roasterOptions">
-  <label><input type="radio" name="roaster" value="S7" checked> S7</label>
-  <label><input type="radio" name="roaster" value="S15"> S15</label>
-  <label><input type="radio" name="roaster" value="S35"> S35</label>
+<div id="actionButtons">
+  <button id="coolerFanBtn">Cooler Fan</button>
+  <button id="dropBtn">Drop (hold 1.5s)</button>
 </div>
 
 <script>
@@ -120,6 +138,14 @@ function selectedRoaster() {
   return 'S7';
 }
 
+function withRoasterIP(payload) {
+  var roaster = selectedRoaster();
+  if (roaster === 'S15' || roaster === 'S35') {
+    payload.ip = '192.168.1.199';
+  }
+  return payload;
+}
+
 function sendGas() {
   var value = parseInt(input.value, 10);
   if (isNaN(value)) {
@@ -131,11 +157,7 @@ function sendGas() {
     value = 100;
   }
 
-  var payload = { value: value };
-  var roaster = selectedRoaster();
-  if (roaster === 'S15' || roaster === 'S35') {
-    payload.ip = '192.168.1.199';
-  }
+  var payload = withRoasterIP({ value: value });
 
   fetch('/gas', {
     method: 'POST',
@@ -156,11 +178,63 @@ function sendGas() {
   input.value = '';
 }
 
+function sendCoolerFan() {
+  var payload = withRoasterIP({});
+
+  fetch('/coolerfan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(function (res) { return res.text(); })
+    .then(function (text) { console.log('coolerfan response: ' + text); })
+    .catch(function (err) { console.error('coolerfan failed: ' + err); });
+}
+
+function sendDrop() {
+  var payload = withRoasterIP({});
+
+  fetch('/drop', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(function (res) { return res.text(); })
+    .then(function (text) { console.log('drop response: ' + text); })
+    .catch(function (err) { console.error('drop failed: ' + err); });
+}
+
 input.addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
     sendGas();
   }
 });
+
+document.getElementById('coolerFanBtn').onclick = function () { sendCoolerFan(); };
+
+var dropBtn = document.getElementById('dropBtn');
+var dropHoldTimer = null;
+
+function startDropHold() {
+  dropHoldTimer = setTimeout(function () {
+    dropHoldTimer = null;
+    sendDrop();
+  }, 1500);
+}
+
+function cancelDropHold() {
+  if (dropHoldTimer) {
+    clearTimeout(dropHoldTimer);
+    dropHoldTimer = null;
+  }
+}
+
+dropBtn.addEventListener('mousedown', startDropHold);
+dropBtn.addEventListener('touchstart', startDropHold);
+dropBtn.addEventListener('mouseup', cancelDropHold);
+dropBtn.addEventListener('mouseleave', cancelDropHold);
+dropBtn.addEventListener('touchend', cancelDropHold);
+dropBtn.addEventListener('touchcancel', cancelDropHold);
 </script>
 
 </body>

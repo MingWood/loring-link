@@ -1,6 +1,6 @@
 # loring-link
 
-A very small Go command-line utility and server example that sends a burner value to the Loring/Koyo PLC. The built files under the dist folder can be run as executables depending on which hardware you have:
+A very small Go command-line utility and server example that sends burner, cooler fan, and drop commands to a Loring/Koyo PLC. The built files under the dist folder can be run as executables depending on which hardware you have:
 darwin-arm64 => macOS on Apple silicon
 darwin-amd64 => macOS on intel/AMD silicon
 linux-amd64 => Linux distribution on intel/AMD silicon
@@ -18,29 +18,41 @@ Find loring-link-server file in the dist folder for your computers OS and double
 
 ## What it does
 
-The cli or server program accepts:
+The CLI and REST server both talk to the Loring/Koyo PLC over UDP port 28784 using the reverse-engineered HAP frame format. Three commands are supported:
 
-- argument 1: burner percentage as an integer
-- argument 2: PLC IP address as an optional override (defaults to 192.168.1.69 which is the Loring S7 PLC IP)
+- `gas <percentage>` — sets the burner/gas value (0-100)
+- `coolerfan` — simulates a cooler fan button press: sends a press frame, waits briefly, then sends a release frame, matching the physical button's click/release behavior
+- `drop` — fires the roaster's drop command as a single one-shot frame. On the real HMI this only fires after the button has been held down for a sustained period; the CLI and server send it immediately when called, so it's up to the caller (or the web UI) to gate on a press-and-hold gesture if you want to avoid accidental drops
 
-It builds a HAP gas-set frame, computes the reverse-engineered checksum, and sends the payload to the PLC over UDP port 28784.
+All three optionally accept a PLC IP address override. If none is supplied, `192.168.1.69` (the Loring S7 PLC IP) is used. Loring S15 and S35 use `192.168.1.199`, but confirm this using the HMI.
 
 ## CLI Usage
-For example for a M1 Macbook from the dist/ folder in terminal to change the burner setting live on a Loring:
-```bash
-./loring-link-darwin-arm64 50
-./loring-link-darwin-arm64 42 192.168.1.199
-```
-If no IP is supplied, the program uses the default address `192.168.1.69`. Loring S15, S35 use `192.168.1.199` but should be confirmed using the HMI.
 
-The CLI can be easily called by Artisan if you'd like to control burner through the Artisan UI. Simply set up a slider with "Action" of "Call Program" and the "Command" to call the CLI program with the value of the slider. Something like:
+For example for a M1 Macbook from the dist/ folder in terminal:
+
 ```bash
-/Users/mingwood/Downloads/loring-link/dist/loring-link-darwin-arm64 {}
+./loring-link-darwin-arm64 gas 50
+./loring-link-darwin-arm64 gas 42 192.168.1.199
+./loring-link-darwin-arm64 coolerfan
+./loring-link-darwin-arm64 coolerfan 192.168.1.199
+./loring-link-darwin-arm64 drop
+./loring-link-darwin-arm64 drop 192.168.1.199
+```
+
+The CLI can be easily called by Artisan if you'd like to control the burner through the Artisan UI. Simply set up a slider with "Action" of "Call Program" and the "Command" to call the CLI program with the `gas` command and the value of the slider. Something like:
+
+```bash
+/Users/mingwood/Downloads/loring-link/dist/loring-link-darwin-arm64 gas {}
 ```
 
 ## REST server + web UI
 
-`cmd/server` builds a separate, standalone binary that exposes a `POST /gas` HTTP endpoint plus two embedded web UIs (`/` for the button grid, `/entry` for free-entry with a roaster selector). It shares the frame/checksum/UDP logic with the CLI via `internal/hap` but has no effect on the CLI binary above, which stays dependency-free.
+`cmd/server` builds a separate, standalone binary that exposes `POST /gas`, `POST /coolerfan`, and `POST /drop` HTTP endpoints, plus two embedded web UIs:
+
+- `/` — a button grid for common burner values (20-100), an "I'm feeling lucky" button for a random value, Cooler Fan and Drop (hold 1.5s) buttons, and a Loring selector (S7/S15/S35) that automatically applies the `192.168.1.199` IP override for S15/S35
+- `/entry` — a free-entry numeric input (clamped to 20-100, press Enter to send) with the same roaster selector and Cooler Fan/Drop controls, plus a green/red border flash showing whether the last gas request succeeded
+
+The server shares the frame/checksum/UDP logic with the CLI via `internal/hap` but has no effect on the CLI binary above, which stays dependency-free.
 
 For example from an M1 Macbook in the dist/ folder:
 
@@ -50,11 +62,17 @@ For example from an M1 Macbook in the dist/ folder:
 
 By default it listens on `:8080` and targets `192.168.1.69:28784`.
 
-Then open `http://localhost:8080/` or `http://localhost:8080/entry` in a browser, or call the endpoint directly:
+Then open `http://localhost:8080/` or `http://localhost:8080/entry` in a browser, or call the endpoints directly. Each accepts an optional `"ip"` field to override the default PLC address for that request:
 
 ```bash
 curl -X POST http://localhost:8080/gas -d '{"value": 50}'
 curl -X POST http://localhost:8080/gas -d '{"value": 50, "ip": "192.168.1.199"}'
+
+curl -X POST http://localhost:8080/coolerfan -d '{}'
+curl -X POST http://localhost:8080/coolerfan -d '{"ip": "192.168.1.199"}'
+
+curl -X POST http://localhost:8080/drop -d '{}'
+curl -X POST http://localhost:8080/drop -d '{"ip": "192.168.1.199"}'
 ```
 
 ## Build standalone executables
