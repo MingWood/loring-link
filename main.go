@@ -77,11 +77,11 @@ func main() {
 		fmt.Printf("coolerfan press=%x release=%x\n", press, release)
 
 	case "drop":
-		frame, err := hap.SendDrop(targetIP, targetPort)
+		press, release, err := hap.SendDrop(targetIP, targetPort)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("drop frame=%x\n", frame)
+		fmt.Printf("drop press=%x release=%x\n", press, release)
 	}
 }

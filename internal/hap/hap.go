@@ -31,23 +31,30 @@ const gasBaseChecksum = uint16(0x5d61)
 
 var gasAddress = [3]byte{0xa1, 0x00, 0x31}
 
+// buttonAddress is the PLC's shared "momentary button pressed" write
+// address. Individual buttons are distinguished only by which value gets
+// written while held (0 always means released), so the base checksum below
+// is the same for every button using this address.
+var buttonAddress = [3]byte{0x87, 0x01, 0x33}
+
+const buttonBaseChecksum = uint16(0xb8bc)
+
 const (
-	coolerFanBaseChecksum = uint16(0xb8bc)
-	coolerFanOnValue      = 4
-	coolerFanOffValue     = 0
+	buttonOffValue   = 0
+	coolerFanOnValue = 4
 	// coolerFanPressDuration approximates the ~160-200ms click-to-release gap
 	// observed between captured button-press frame pairs.
 	coolerFanPressDuration = 150 * time.Millisecond
+
+	dropOnValue = 1
+	// dropHoldDuration approximates the ~1.2s press-to-release gap observed
+	// in the "long press to drop" capture. A direct one-shot write to a
+	// separate address (81 00 31 = 5) was also seen on the wire immediately
+	// after that long hold, but sending it alone does not reliably trigger a
+	// drop on real hardware — the PLC appears to require the sustained
+	// button-held state instead.
+	dropHoldDuration = 1200 * time.Millisecond
 )
-
-var coolerFanAddress = [3]byte{0x87, 0x01, 0x33}
-
-const (
-	dropBaseChecksum = uint16(0xe969)
-	dropValue        = 5
-)
-
-var dropAddress = [3]byte{0x81, 0x00, 0x31}
 
 func checksumWithBase(base uint16, value int) uint16 {
 	c := base
@@ -84,15 +91,19 @@ func BuildGasFrame(value int, nonce []byte) []byte {
 }
 
 func BuildCoolerFanFrame(pressed bool, nonce []byte) []byte {
-	value := coolerFanOffValue
+	value := buttonOffValue
 	if pressed {
 		value = coolerFanOnValue
 	}
-	return buildFrame(coolerFanBaseChecksum, coolerFanAddress, value, nonce)
+	return buildFrame(buttonBaseChecksum, buttonAddress, value, nonce)
 }
 
-func BuildDropFrame(nonce []byte) []byte {
-	return buildFrame(dropBaseChecksum, dropAddress, dropValue, nonce)
+func BuildDropButtonFrame(pressed bool, nonce []byte) []byte {
+	value := buttonOffValue
+	if pressed {
+		value = dropOnValue
+	}
+	return buildFrame(buttonBaseChecksum, buttonAddress, value, nonce)
 }
 
 func dialPLC(targetIP string, targetPort int) (*net.UDPConn, error) {
@@ -143,24 +154,28 @@ func SendCoolerFanButton(targetIP string, targetPort int) (pressFrame, releaseFr
 	return pressFrame, releaseFrame, nil
 }
 
-// SendDrop sends the roaster's drop command as a single one-shot UDP frame —
-// unlike SendCoolerFanButton there is no press/release pair here, since the
-// HMI only fires this after the operator has held the drop button down for a
-// sustained period. Callers building their own UI should implement that
-// press-and-hold or similar gesture themselves (e.g. requiring the button to be held for
-// N seconds) before calling this function, if they want to avoid accidental
-// drops from a single tap.
-func SendDrop(targetIP string, targetPort int) ([]byte, error) {
+// SendDrop simulates a long press-and-hold of the drop button: it sends the
+// press frame, waits ~1.2s (matching the hold duration observed on the wire),
+// then sends the release frame. This mirrors what the physical HMI button
+// does and is what actually triggers a drop on real hardware.
+func SendDrop(targetIP string, targetPort int) (pressFrame, releaseFrame []byte, err error) {
 	conn, err := dialPLC(targetIP, targetPort)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer conn.Close()
 
-	frame := BuildDropFrame(nil)
-	if _, err := conn.Write(frame); err != nil {
-		return nil, err
+	pressFrame = BuildDropButtonFrame(true, nil)
+	if _, err = conn.Write(pressFrame); err != nil {
+		return nil, nil, err
 	}
 
-	return frame, nil
+	time.Sleep(dropHoldDuration)
+
+	releaseFrame = BuildDropButtonFrame(false, nil)
+	if _, err = conn.Write(releaseFrame); err != nil {
+		return pressFrame, nil, err
+	}
+
+	return pressFrame, releaseFrame, nil
 }

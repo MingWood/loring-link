@@ -23,7 +23,7 @@
 <p>Trigger roaster actions:</p>
 <div id="actionButtons"  style="margin-bottom: 50px">
   <button id="coolerFanBtn">Cooler Fan</button>
-  <button id="dropBtn">Drop (hold 1.5s)</button>
+  <button id="dropBtn">Drop (hold 1s)</button>
 </div>
 
 <div>
@@ -105,7 +105,7 @@ function startDropHold() {
   dropHoldTimer = setTimeout(function () {
     dropHoldTimer = null;
     sendDrop();
-  }, 1500);
+  }, 1000);
 }
 
 function cancelDropHold() {

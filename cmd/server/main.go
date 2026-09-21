@@ -36,13 +36,9 @@ type ipOverrideRequest struct {
 	IP string `json:"ip,omitempty"`
 }
 
-type coolerFanResponse struct {
+type buttonPressResponse struct {
 	Press   string `json:"press"`
 	Release string `json:"release"`
-}
-
-type dropResponse struct {
-	Frame string `json:"frame"`
 }
 
 // withCORS wraps a POST-only handler with the headers needed for cross-origin
@@ -139,7 +135,7 @@ func coolerFanHandler(plcIP string, plcPort int) http.HandlerFunc {
 		log.Printf("coolerfan press=%x release=%x", press, release)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(coolerFanResponse{
+		json.NewEncoder(w).Encode(buttonPressResponse{
 			Press:   fmt.Sprintf("%x", press),
 			Release: fmt.Sprintf("%x", release),
 		})
@@ -159,15 +155,18 @@ func dropHandler(plcIP string, plcPort int) http.HandlerFunc {
 			return
 		}
 
-		frame, err := hap.SendDrop(targetIP, plcPort)
+		press, release, err := hap.SendDrop(targetIP, plcPort)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to send drop command: %v", err), http.StatusBadGateway)
 			return
 		}
-		log.Printf("drop frame=%x", frame)
+		log.Printf("drop press=%x release=%x", press, release)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(dropResponse{Frame: fmt.Sprintf("%x", frame)})
+		json.NewEncoder(w).Encode(buttonPressResponse{
+			Press:   fmt.Sprintf("%x", press),
+			Release: fmt.Sprintf("%x", release),
+		})
 	})
 }
 

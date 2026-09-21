@@ -10,11 +10,15 @@ windows-amd64 => Windows OS on intel/AMD silicon
 
 Using this program assumes you are already connected to a Loring in a way that logging already works through something like Cropster or Artisan.
 
-This is not an officially published access protocol by Loring for public use. Please use at your own risk.
+This is NOT an officially published access protocol by Loring for public use. Please use at your own risk.
 
 ## Quick start example
 
-Find loring-link-server file in the dist folder for your computers OS and double click to open. Then navigate to http://localhost:8080/ on your browser.
+Download or clone this repo.
+
+Find loring-link-server file in the dist folder for your computers OS and double click to open or call the file in terminal `./loring-link-server-darwin-arm64`. Then navigate to http://localhost:8080/ on your browser. 
+
+Depending on your computers security you may need to change some permissions to allow this file to run including running `sudo chmod 755 <filname_here>` if on a Mac and you didn't use git to clone the repo.
 
 ## What it does
 
@@ -22,7 +26,7 @@ The CLI and REST server both talk to the Loring/Koyo PLC over UDP port 28784 usi
 
 - `gas <percentage>` — sets the burner/gas value (0-100)
 - `coolerfan` — simulates a cooler fan button press: sends a press frame, waits briefly, then sends a release frame, matching the physical button's click/release behavior
-- `drop` — fires the roaster's drop command as a single one-shot frame. On the real HMI this only fires after the button has been held down for a sustained period; the CLI and server send it immediately when called, so it's up to the caller (or the web UI) to gate on a press-and-hold gesture if you want to avoid accidental drops
+- `drop` — simulates long press on drop button. On the real HMI this only fires after the button has been held down for a sustained period of 1.2s; the CLI and server send it immediately when called, so it's up to the caller (or the web UI) to gate on a press-and-hold gesture if you want to avoid accidental drops
 
 All three optionally accept a PLC IP address override. If none is supplied, `192.168.1.69` (the Loring S7 PLC IP) is used. Loring S15 and S35 use `192.168.1.199`, but confirm this using the HMI.
 
