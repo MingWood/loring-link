@@ -2,6 +2,34 @@
 <html>
 <head>
 <title>Super Good Loring Control UI</title>
+<style>
+  :root {
+    --giant-cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 32 32'><polygon points='0,0 0,22 6,17 10,25 13,23 9,15 17,15' fill='black' stroke='white' stroke-width='1'/></svg>") 4 4, auto;
+  }
+
+  html, body, button, a, label, input {
+    cursor: var(--giant-cursor);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+  }
+
+  #buttons {
+    display: grid;
+    grid-template-columns: repeat(14, 1fr);
+    gap: 6px;
+    margin: 10px 0;
+  }
+
+  #buttons button {
+    width: 100%;
+  }
+</style>
 </head>
 <body>
 
@@ -14,7 +42,7 @@
   <label><input type="radio" name="roaster" value="S35"> S35</label>
 </div>
 
-<p>Set gas burner setting below:</p>
+<p>Set gas burner setting to the digits of Pi:</p>
 
 <div id="buttons"></div>
 
@@ -122,16 +150,25 @@ dropBtn.addEventListener('mouseleave', cancelDropHold);
 dropBtn.addEventListener('touchend', cancelDropHold);
 dropBtn.addEventListener('touchcancel', cancelDropHold);
 
+var piDigitLabels = [
+  '3', '14', '15', '92', '65', '35', '89', '79', '32', '38',
+  '46', '26', '43', '38', '32', '79', '50', '28', '84', '19',
+  '71', '69', '39', '93', '75', '10', '58', '20', '97', '49',
+  '44', '59', '23', '07', '81', '64', '06', '28', '62', '08',
+  '99'
+];
+
 var container = document.getElementById('buttons');
-for (var v = 20; v <= 100; v += 2) {
-  (function (value) {
+for (var i = 0; i < piDigitLabels.length; i++) {
+  (function (label) {
+    var value = parseInt(label, 10);
     var btn = document.createElement('button');
-    btn.textContent = value;
+    btn.textContent = label;
     btn.onclick = function () { sendGas(value); };
     container.appendChild(btn);
-  })(v);
+  })(piDigitLabels[i]);
 
-  if (v === 66) {
+  if (i === 23) {
     var funBtn = document.createElement('button');
     funBtn.textContent = '⁶🤷‍♂️⁷';
     funBtn.onclick = function () { alert('lol no'); };

@@ -1,24 +1,24 @@
 # loring-link
 
 A very small Go command-line utility and server example that sends burner, cooler fan, and drop commands to a Loring/Koyo PLC. The built files under the dist folder can be run as executables depending on which hardware you have:
-darwin-arm64 => macOS on Apple silicon
-darwin-amd64 => macOS on intel/AMD silicon
-linux-amd64 => Linux distribution on intel/AMD silicon
-windows-amd64 => Windows OS on intel/AMD silicon
+- darwin-arm64 => macOS on Apple silicon
+- darwin-amd64 => macOS on intel/AMD silicon
+- linux-amd64 => Linux distribution on intel/AMD silicon
+- windows-amd64 => Windows OS on intel/AMD silicon
 
 ## Prerequisites
 
-Using this program assumes you are already connected to a Loring in a way that logging already works through something like Cropster or Artisan.
-
 This is NOT an officially published access protocol by Loring for public use. Please use at your own risk.
+
+Using this program assumes you are already connected to a Loring via local network (logging already works through something like Cropster or Artisan). If not, then check IP settings and refer to Lorings help documents.
 
 ## Quick start example
 
-Download or clone this repo.
+Clone this repo or download it as a .zip file.
 
-Find loring-link-server file in the dist folder for your computers OS and double click to open or call the file in terminal `./loring-link-server-darwin-arm64`. Then navigate to http://localhost:8080/ on your browser. 
+Find loring-link-server file in the dist folder in this repo that is labeled for your computers OS. Double click to open it or call the file in terminal `./loring-link-server-darwin-arm64`. Then navigate to http://localhost:8080/ on your browser. 
 
-Depending on your computers security you may need to change some permissions to allow this file to run including running `sudo chmod 755 <filname_here>` if on a Mac and you didn't use git to clone the repo.
+Depending on your computers security you may need to change some permissions to allow this file to run including running `sudo chmod 755 <filname_here>` if on a Mac and you didn't use git to clone the repo or download the full .zip file properly.
 
 ## What it does
 
@@ -28,7 +28,7 @@ The CLI and REST server both talk to the Loring/Koyo PLC over UDP port 28784 usi
 - `coolerfan` — simulates a cooler fan button press: sends a press frame, waits briefly, then sends a release frame, matching the physical button's click/release behavior
 - `drop` — simulates long press on drop button. On the real HMI this only fires after the button has been held down for a sustained period of 1.2s; the CLI and server send it immediately when called, so it's up to the caller (or the web UI) to gate on a press-and-hold gesture if you want to avoid accidental drops
 
-All three optionally accept a PLC IP address override. If none is supplied, `192.168.1.69` (the Loring S7 PLC IP) is used. Loring S15 and S35 use `192.168.1.199`, but confirm this using the HMI.
+All three optionally accept a PLC IP address override. If none is supplied, `192.168.1.69` (the Loring S7 PLC IP) is used. Loring S15 and S35 use `192.168.1.199`, but confirm this in the touchscreen HMI settings.
 
 ## CLI Usage
 
@@ -53,7 +53,7 @@ The CLI can be easily called by Artisan if you'd like to control the burner thro
 
 `cmd/server` builds a separate, standalone binary that exposes `POST /gas`, `POST /coolerfan`, and `POST /drop` HTTP endpoints, plus two embedded web UIs:
 
-- `/` — a button grid for common burner values (20-100), an "I'm feeling lucky" button for a random value, Cooler Fan and Drop (hold 1.5s) buttons, and a Loring selector (S7/S15/S35) that automatically applies the `192.168.1.199` IP override for S15/S35
+- `/` — a button grid for fun burner values, an "I'm feeling lucky" button for a random value, Cooler Fan and Drop (hold 1.5s) buttons, and a Loring selector (S7/S15/S35) that automatically applies the `192.168.1.199` IP override for S15/S35
 - `/entry` — a free-entry numeric input (clamped to 20-100, press Enter to send) with the same roaster selector and Cooler Fan/Drop controls, plus a green/red border flash showing whether the last gas request succeeded
 
 The server shares the frame/checksum/UDP logic with the CLI via `internal/hap` but has no effect on the CLI binary above, which stays dependency-free.

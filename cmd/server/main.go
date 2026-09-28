@@ -41,9 +41,6 @@ type buttonPressResponse struct {
 	Release string `json:"release"`
 }
 
-// withCORS wraps a POST-only handler with the headers needed for cross-origin
-// callers (e.g. the web UI opened as a local file) and answers preflight
-// OPTIONS requests directly.
 func withCORS(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -62,8 +59,6 @@ func withCORS(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// resolveTargetIP returns override if set (validating it), otherwise
-// defaultIP.
 func resolveTargetIP(defaultIP, override string) (string, error) {
 	if override == "" {
 		return defaultIP, nil
@@ -74,8 +69,6 @@ func resolveTargetIP(defaultIP, override string) (string, error) {
 	return override, nil
 }
 
-// decodeIPOverride reads an optional JSON body of the form {"ip": "..."}. An
-// empty body is treated as no override.
 func decodeIPOverride(r *http.Request) (string, error) {
 	var req ipOverrideRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
@@ -201,8 +194,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(*listenAddr, nil))
 }
 
-// browserURL turns a listen address like ":8080" or "127.0.0.1:8080" into a
-// browser-friendly http://localhost:<port> URL.
 func browserURL(listenAddr string) string {
 	_, port, err := net.SplitHostPort(listenAddr)
 	if err != nil {
@@ -211,8 +202,6 @@ func browserURL(listenAddr string) string {
 	return "http://localhost:" + port
 }
 
-// hyperlink wraps url in the OSC 8 terminal escape sequence so terminals that
-// support clickable links (most modern ones) render it as one.
 func hyperlink(url string) string {
 	return "\x1b]8;;" + url + "\x1b\\" + url + "\x1b]8;;\x1b\\"
 }

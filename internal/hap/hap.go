@@ -32,9 +32,7 @@ const gasBaseChecksum = uint16(0x5d61)
 var gasAddress = [3]byte{0xa1, 0x00, 0x31}
 
 // buttonAddress is the PLC's shared "momentary button pressed" write
-// address. Individual buttons are distinguished only by which value gets
-// written while held (0 always means released), so the base checksum below
-// is the same for every button using this address.
+// address.
 var buttonAddress = [3]byte{0x87, 0x01, 0x33}
 
 const buttonBaseChecksum = uint16(0xb8bc)
@@ -42,17 +40,11 @@ const buttonBaseChecksum = uint16(0xb8bc)
 const (
 	buttonOffValue   = 0
 	coolerFanOnValue = 4
-	// coolerFanPressDuration approximates the ~160-200ms click-to-release gap
-	// observed between captured button-press frame pairs.
+	// coolerFanPressDuration approximates the ~160-200ms click-to-release gap.
 	coolerFanPressDuration = 150 * time.Millisecond
 
 	dropOnValue = 1
-	// dropHoldDuration approximates the ~1.2s press-to-release gap observed
-	// in the "long press to drop" capture. A direct one-shot write to a
-	// separate address (81 00 31 = 5) was also seen on the wire immediately
-	// after that long hold, but sending it alone does not reliably trigger a
-	// drop on real hardware — the PLC appears to require the sustained
-	// button-held state instead.
+	// dropHoldDuration approximates the ~1.2s press-to-release gap.
 	dropHoldDuration = 1200 * time.Millisecond
 )
 
@@ -130,8 +122,7 @@ func SendGas(value int, targetIP string, targetPort int) ([]byte, error) {
 }
 
 // SendCoolerFanButton simulates a physical cooler fan button press: it sends
-// the press frame, waits briefly, then sends the release frame, matching the
-// two-message click/release pattern.
+// the press frame, waits briefly, then sends the release frame.
 func SendCoolerFanButton(targetIP string, targetPort int) (pressFrame, releaseFrame []byte, err error) {
 	conn, err := dialPLC(targetIP, targetPort)
 	if err != nil {
@@ -156,8 +147,7 @@ func SendCoolerFanButton(targetIP string, targetPort int) (pressFrame, releaseFr
 
 // SendDrop simulates a long press-and-hold of the drop button: it sends the
 // press frame, waits ~1.2s (matching the hold duration observed on the wire),
-// then sends the release frame. This mirrors what the physical HMI button
-// does and is what actually triggers a drop on real hardware.
+// then sends the release frame. This mirrors the physical HMI button.
 func SendDrop(targetIP string, targetPort int) (pressFrame, releaseFrame []byte, err error) {
 	conn, err := dialPLC(targetIP, targetPort)
 	if err != nil {
